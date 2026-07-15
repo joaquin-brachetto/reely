@@ -11,7 +11,7 @@ import ResetPasswordForm from '../components/auth/ResetPasswordForm'
 import Logo from '../components/layout/Logo'
 import fondo from '../assets/logo.jpg'
 
-const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/w1280'
+const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original'
 const POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w342'
 
 const views = {
@@ -145,7 +145,7 @@ export default function LoginPage() {
                         WebkitMaskImage: 'radial-gradient(ellipse 90% 75% at 50% 30%, black 0%, black 30%, transparent 85%)',
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/55 to-black" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/20 to-black/90" />
             </div>
 
             <nav className="relative z-20 flex justify-between items-center px-8 py-6 w-full max-w-7xl mx-auto">
@@ -167,7 +167,7 @@ export default function LoginPage() {
                         </button>
                     </div>
                 ) : (
-                <div className="flex flex-col items-end">
+                <div className="absolute top-6 right-8 flex flex-col items-end z-50">
                     <form
                         onSubmit={handleLogin}
                         autoComplete="off"
