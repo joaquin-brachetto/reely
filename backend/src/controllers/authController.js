@@ -90,12 +90,23 @@ export const login = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         )
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        })
+
         res.json({
-            token,
             user: { id: user.id, username: user.username, email: user.email }
         })
 
     } catch (error) {
         res.status(500).json({ error: 'Error interno del servidor' })
     }
+}
+
+export const logout = (req, res) => {
+    res.clearCookie('token')
+    res.json({ message: 'Sesión cerrada exitosamente' })
 }

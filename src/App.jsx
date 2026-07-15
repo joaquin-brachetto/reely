@@ -2,11 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { PreferencesProvider } from './context/PreferencesContext'
 import { WatchlistProvider } from './context/WatchlistContext'
-import LoginPage from './pages/LoginPage'
-import HomePage from './pages/HomePage'
-import MovieDetailPage from './pages/MovieDetailPage'
-import PersonDetailPage from './pages/PersonDetailPage'
-import WatchlistPage from './pages/WatchlistPage'
+import { lazy, Suspense } from 'react'
+
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const HomePage = lazy(() => import('./pages/HomePage'))
+const MovieDetailPage = lazy(() => import('./pages/MovieDetailPage'))
+const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'))
+const WatchlistPage = lazy(() => import('./pages/WatchlistPage'))
 
 function PrivateRoute({ children }) {
   const { user } = useAuth()
@@ -19,25 +21,27 @@ export default function App() {
       <PreferencesProvider>
         <WatchlistProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/" element={
-                <PrivateRoute>
-                  <HomePage />
-                </PrivateRoute>
-              } />
-              <Route path="/person/:id" element={
-                <PrivateRoute>
-                  <PersonDetailPage />
-                </PrivateRoute>
-              } />
-              <Route path="/watchlist" element={
-                <PrivateRoute>
-                  <WatchlistPage />
-                </PrivateRoute>
-              } />
-              <Route path="/:mediaType/:id" element={<MovieDetailPage />} />
-            </Routes>
+            <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-green-500 font-bold">Cargando...</div>}>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/" element={
+                  <PrivateRoute>
+                    <HomePage />
+                  </PrivateRoute>
+                } />
+                <Route path="/person/:id" element={
+                  <PrivateRoute>
+                    <PersonDetailPage />
+                  </PrivateRoute>
+                } />
+                <Route path="/watchlist" element={
+                  <PrivateRoute>
+                    <WatchlistPage />
+                  </PrivateRoute>
+                } />
+                <Route path="/:mediaType/:id" element={<MovieDetailPage />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </WatchlistProvider>
       </PreferencesProvider>

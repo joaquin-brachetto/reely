@@ -1,60 +1,45 @@
 import { createContext, useContext, useState } from 'react'
+import { logoutRequest } from '../services/authService'
 
 const AuthContext = createContext(null)
 
-function decodeToken(token) {
-    try {
-        const payload = token.split('.')[1]
-        return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-    } catch {
-        return null
-    }
-}
-
-function isTokenValid(token) {
-    const payload = decodeToken(token)
-    if (!payload?.exp) return false
-    return payload.exp * 1000 > Date.now()
-}
-
 function getStoredSession() {
-    const token = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
-
-    if (!token || !storedUser || !isTokenValid(token)) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        return { user: null, token: null }
-    }
+    if (!storedUser) return { user: null }
 
     try {
-        return { user: JSON.parse(storedUser), token }
+        return { user: JSON.parse(storedUser) }
     } catch {
-        return { user: null, token: null }
+        return { user: null }
     }
 }
 
 export function AuthProvider({ children }) {
-    const [{ user, token }, setSession] = useState(getStoredSession)
+    const [{ user }, setSession] = useState(getStoredSession)
 
-    const login = (userData, jwtToken) => {
-        localStorage.setItem('token', jwtToken)
+    const login = (userData) => {
         localStorage.setItem('user', JSON.stringify(userData))
-        setSession({ user: userData, token: jwtToken })
+        setSession({ user: userData })
     }
 
-    const logout = () => {
-        localStorage.removeItem('token')
+    const logout = async () => {
+        try {
+            await logoutRequest()
+        } catch (error) {
+            console.error("Error logging out", error)
+        }
         localStorage.removeItem('user')
-        setSession({ user: null, token: null })
+        setSession({ user: null })
     }
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout }}>
             {children}
         </AuthContext.Provider>
     )
 }
+
+
 
 export function useAuth() {
     return useContext(AuthContext)

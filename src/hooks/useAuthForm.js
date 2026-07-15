@@ -81,7 +81,7 @@ export function useAuthForm() {
                 return
             }
 
-            login(data.user, data.token)
+            login(data.user)
             navigate('/')
 
         } catch {

@@ -1,12 +1,10 @@
-const BASE_URL = import.meta.env.VITE_TMDB_BASE_URL
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY
-const OMDB_BASE_URL = import.meta.env.VITE_OMDB_BASE_URL
-const OMDB_API_KEY = import.meta.env.VITE_OMDB_API_KEY
+const BASE_URL = `${import.meta.env.VITE_API_URL}/movies/tmdb`
+const OMDB_BASE_URL = `${import.meta.env.VITE_API_URL}/movies/omdb`
 
 const tagMediaType = (results, mediaType) => results.map(item => ({ ...item, media_type: mediaType }))
 
 export const getOriginalPoster = async (mediaType, id, originalLanguage) => {
-    const res = await fetch(`${BASE_URL}/${mediaType}/${id}/images?api_key=${API_KEY}&include_image_language=${originalLanguage},null`)
+    const res = await fetch(`${BASE_URL}/${mediaType}/${id}/images?include_image_language=${originalLanguage},null`)
     if (!res.ok) throw new Error('Error al obtener el póster original')
     const data = await res.json()
     const exactMatch = data.posters?.find(p => p.iso_639_1 === originalLanguage)
@@ -28,14 +26,14 @@ const withOriginalPosters = async (results) => {
 }
 
 export const getGenres = async (mediaType) => {
-    const res = await fetch(`${BASE_URL}/genre/${mediaType}/list?api_key=${API_KEY}&language=es-ES`)
+    const res = await fetch(`${BASE_URL}/genre/${mediaType}/list?language=es-ES`)
     if (!res.ok) throw new Error('Error al obtener los géneros')
     const data = await res.json()
     return data.genres
 }
 
 const discoverByType = async (mediaType, { year, genreId, page = 1 } = {}) => {
-    const params = new URLSearchParams({ api_key: API_KEY, page, sort_by: 'popularity.desc' })
+    const params = new URLSearchParams({ page, sort_by: 'popularity.desc' })
     if (year) params.set(mediaType === 'movie' ? 'primary_release_year' : 'first_air_date_year', year)
     if (genreId) params.set('with_genres', genreId)
 
@@ -46,7 +44,7 @@ const discoverByType = async (mediaType, { year, genreId, page = 1 } = {}) => {
 }
 
 export const discoverSection = async (mediaType, { sortBy = 'popularity.desc', genreId, minVotes, region, yearFrom, yearTo } = {}) => {
-    const params = new URLSearchParams({ api_key: API_KEY, page: 1, sort_by: sortBy })
+    const params = new URLSearchParams({ page: 1, sort_by: sortBy })
     if (genreId) params.set('with_genres', genreId)
     if (minVotes) params.set('vote_count.gte', minVotes)
     const dateField = mediaType === 'movie' ? 'primary_release_date' : 'first_air_date'
@@ -78,7 +76,7 @@ export const discoverTitles = async (mediaType, { year, genreIds } = {}) => {
 
 export const searchTitles = async (query, mediaType, { year } = {}) => {
     if (mediaType === 'all') {
-        const params = new URLSearchParams({ api_key: API_KEY, language: 'es-ES', query, page: 1 })
+        const params = new URLSearchParams({ language: 'es-ES', query, page: 1 })
         const res = await fetch(`${BASE_URL}/search/multi?${params.toString()}`)
         if (!res.ok) throw new Error('Error al buscar títulos')
         const data = await res.json()
@@ -86,7 +84,7 @@ export const searchTitles = async (query, mediaType, { year } = {}) => {
         return { ...data, results: await withOriginalPosters(filtered) }
     }
 
-    const params = new URLSearchParams({ api_key: API_KEY, language: 'es-ES', query, page: 1 })
+    const params = new URLSearchParams({ language: 'es-ES', query, page: 1 })
     if (year) params.set(mediaType === 'movie' ? 'primary_release_year' : 'first_air_date_year', year)
 
     const res = await fetch(`${BASE_URL}/search/${mediaType}?${params.toString()}`)
@@ -97,41 +95,41 @@ export const searchTitles = async (query, mediaType, { year } = {}) => {
 }
 
 export const getTrendingMovies = async () => {
-    const res = await fetch(`${BASE_URL}/trending/movie/day?api_key=${API_KEY}`)
+    const res = await fetch(`${BASE_URL}/trending/movie/day`)
     if (!res.ok) throw new Error('Error al obtener tendencias')
     return res.json()
 }
 
 export const getTrendingAll = async () => {
-    const res = await fetch(`${BASE_URL}/trending/all/day?api_key=${API_KEY}`)
+    const res = await fetch(`${BASE_URL}/trending/all/day`)
     if (!res.ok) throw new Error('Error al obtener tendencias')
     const data = await res.json()
     return { ...data, results: data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv') }
 }
 
 export const getWatchProviders = async (mediaType, region) => {
-    const res = await fetch(`${BASE_URL}/watch/providers/${mediaType}?api_key=${API_KEY}&language=es-ES&watch_region=${region}`)
+    const res = await fetch(`${BASE_URL}/watch/providers/${mediaType}?language=es-ES&watch_region=${region}`)
     if (!res.ok) throw new Error('Error al obtener los proveedores')
     const data = await res.json()
     return data.results || []
 }
 
 export const getCountries = async () => {
-    const res = await fetch(`${BASE_URL}/configuration/countries?api_key=${API_KEY}&language=es-ES`)
+    const res = await fetch(`${BASE_URL}/configuration/countries?language=es-ES`)
     if (!res.ok) throw new Error('Error al obtener los países')
     const data = await res.json()
     return data.sort((a, b) => a.native_name.localeCompare(b.native_name))
 }
 
 export const getPersonDetails = async (personId) => {
-    const res = await fetch(`${BASE_URL}/person/${personId}?api_key=${API_KEY}&language=es-ES&append_to_response=combined_credits`)
+    const res = await fetch(`${BASE_URL}/person/${personId}?language=es-ES&append_to_response=combined_credits`)
     if (!res.ok) throw new Error('Error al obtener el detalle del actor')
     return res.json()
 }
 
 export const getDetails = async (mediaType, id) => {
     const certificationAppend = mediaType === 'movie' ? 'release_dates' : 'content_ratings'
-    const res = await fetch(`${BASE_URL}/${mediaType}/${id}?api_key=${API_KEY}&language=es-ES&append_to_response=watch/providers,credits,external_ids,${certificationAppend}`)
+    const res = await fetch(`${BASE_URL}/${mediaType}/${id}?language=es-ES&append_to_response=watch/providers,credits,external_ids,${certificationAppend}`)
     if (!res.ok) throw new Error('Error al obtener el detalle')
     return res.json()
 }
@@ -171,7 +169,7 @@ export const getCertification = (movie, mediaType, country) => {
 
 export const getExternalRatings = async (imdbId) => {
     if (!imdbId) return null
-    const res = await fetch(`${OMDB_BASE_URL}/?i=${imdbId}&apikey=${OMDB_API_KEY}`)
+    const res = await fetch(`${OMDB_BASE_URL}/?i=${imdbId}`)
     if (!res.ok) throw new Error('Error al obtener los ratings')
     const data = await res.json()
     if (data.Response === 'False') return null
