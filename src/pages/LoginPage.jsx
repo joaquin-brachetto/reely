@@ -44,6 +44,7 @@ export default function LoginPage() {
     const [showForms, setShowForms] = useState(false)
     const [backdrop, setBackdrop] = useState(null)
     const [trending, setTrending] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const fetchTrending = async () => {
@@ -53,11 +54,15 @@ export default function LoginPage() {
                 const withBackdrop = results.find((movie) => movie.backdrop_path)
                 if (withBackdrop) {
                     setBackdrop(`${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`)
+                } else {
+                    setBackdrop(fondo)
                 }
                 setTrending(results.filter((movie) => movie.poster_path).slice(0, 6))
             } catch {
-                setBackdrop(null)
+                setBackdrop(fondo)
                 setTrending([])
+            } finally {
+                setIsLoading(false)
             }
         }
         fetchTrending()
@@ -129,12 +134,12 @@ export default function LoginPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-black relative flex flex-col font-sans overflow-hidden">
+        <div className={`min-h-screen bg-black relative flex flex-col font-sans overflow-hidden transition-opacity duration-700 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <div
                     className="absolute inset-0 bg-cover"
                     style={{
-                        backgroundImage: `url(${backdrop || fondo})`,
+                        backgroundImage: backdrop ? `url(${backdrop})` : 'none',
                         backgroundPosition: 'center 20%',
                         maskImage: 'radial-gradient(ellipse 90% 75% at 50% 30%, black 0%, black 30%, transparent 85%)',
                         WebkitMaskImage: 'radial-gradient(ellipse 90% 75% at 50% 30%, black 0%, black 30%, transparent 85%)',
