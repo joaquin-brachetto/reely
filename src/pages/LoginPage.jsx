@@ -43,6 +43,7 @@ export default function LoginPage() {
     const navigate = useNavigate()
     const [showForms, setShowForms] = useState(false)
     const [backdrop, setBackdrop] = useState(null)
+    const [backdropMovie, setBackdropMovie] = useState(null)
     const [trending, setTrending] = useState([])
     const [isLoading, setIsLoading] = useState(true)
 
@@ -54,6 +55,7 @@ export default function LoginPage() {
                 const withBackdrop = results.find((movie) => movie.backdrop_path)
                 if (withBackdrop) {
                     setBackdrop(`${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`)
+                    setBackdropMovie(withBackdrop)
                 } else {
                     setBackdrop(fondo)
                 }
@@ -314,6 +316,15 @@ export default function LoginPage() {
                         </button>
                         {views[currentView](viewProps[currentView])}
                     </div>
+                </div>
+            )}
+
+            {backdropMovie && (
+                <div className="absolute bottom-4 left-6 z-20 pointer-events-none opacity-40">
+                    <p className="text-white text-xs font-medium tracking-wider">
+                        {backdropMovie.title || backdropMovie.original_title || backdropMovie.name}
+                        {backdropMovie.release_date || backdropMovie.first_air_date ? ` (${(backdropMovie.release_date || backdropMovie.first_air_date).substring(0, 4)})` : ''}
+                    </p>
                 </div>
             )}
         </div>
