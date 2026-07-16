@@ -236,7 +236,9 @@ export default function HomePage() {
 
                 {showSections ? (
                     sectionsLoading ? (
-                        <p className="text-white text-center">Cargando...</p>
+                        <div className="flex justify-center py-12">
+                            <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
                     ) : (
                         sections.map(section => (
                             <MovieRow
@@ -248,7 +250,9 @@ export default function HomePage() {
                         ))
                     )
                 ) : isLoading ? (
-                    <p className="text-white text-center">Buscando...</p>
+                    <div className="flex justify-center py-12">
+                        <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
                 ) : displayedTitles.length === 0 ? (
                     <p className="text-gray-400 text-center">No encontramos resultados con estos filtros.</p>
                 ) : (

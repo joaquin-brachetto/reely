@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { PreferencesProvider } from './context/PreferencesContext'
 import { WatchlistProvider } from './context/WatchlistContext'
 import { lazy, Suspense } from 'react'
+import TopProgressBar from './components/layout/TopProgressBar'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -21,7 +22,7 @@ export default function App() {
       <PreferencesProvider>
         <WatchlistProvider>
           <BrowserRouter>
-            <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-green-500 font-bold">Cargando...</div>}>
+            <Suspense fallback={<TopProgressBar />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/" element={
