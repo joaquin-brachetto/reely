@@ -14,6 +14,9 @@ import fondo from '../assets/logo.jpg'
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original'
 const POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w342'
 
+// Cache en memoria: al volver a /login no se repite el fetch ni el fade
+let trendingCache = null
+
 const views = {
     login: (props) => <LoginForm {...props} />,
     register: (props) => <RegisterForm {...props} />,
@@ -42,24 +45,31 @@ export default function LoginPage() {
 
     const navigate = useNavigate()
     const [showForms, setShowForms] = useState(false)
-    const [backdrop, setBackdrop] = useState(null)
-    const [backdropMovie, setBackdropMovie] = useState(null)
-    const [trending, setTrending] = useState([])
-    const [isLoading, setIsLoading] = useState(true)
+    const [backdrop, setBackdrop] = useState(trendingCache?.backdrop ?? null)
+    const [backdropMovie, setBackdropMovie] = useState(trendingCache?.backdropMovie ?? null)
+    const [trending, setTrending] = useState(trendingCache?.trending ?? [])
+    const [isLoading, setIsLoading] = useState(!trendingCache)
 
     useEffect(() => {
+        if (trendingCache) return
+
         const fetchTrending = async () => {
             try {
                 const data = await getTrendingMovies()
                 const results = data.results || []
                 const withBackdrop = results.find((movie) => movie.backdrop_path)
-                if (withBackdrop) {
-                    setBackdrop(`${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`)
-                    setBackdropMovie(withBackdrop)
-                } else {
-                    setBackdrop(fondo)
+                const nextBackdrop = withBackdrop
+                    ? `${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`
+                    : fondo
+                const nextTrending = results.filter((movie) => movie.poster_path).slice(0, 6)
+                trendingCache = {
+                    backdrop: nextBackdrop,
+                    backdropMovie: withBackdrop || null,
+                    trending: nextTrending,
                 }
-                setTrending(results.filter((movie) => movie.poster_path).slice(0, 6))
+                setBackdrop(nextBackdrop)
+                setBackdropMovie(withBackdrop || null)
+                setTrending(nextTrending)
             } catch {
                 setBackdrop(fondo)
                 setTrending([])
@@ -136,8 +146,8 @@ export default function LoginPage() {
     ]
 
     return (
-        <div className={`min-h-screen bg-black relative flex flex-col font-sans overflow-hidden transition-opacity duration-700 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="min-h-screen bg-black relative flex flex-col font-sans overflow-hidden">
+            <div className={`absolute inset-0 z-0 pointer-events-none transition-opacity duration-300 ease-in-out ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
                 <div
                     className="absolute inset-0 bg-cover"
                     style={{
