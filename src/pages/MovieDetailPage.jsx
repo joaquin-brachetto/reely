@@ -88,35 +88,35 @@ export default function MovieDetailPage() {
             <div className="min-h-screen bg-black p-8">
                 <div className="max-w-5xl mx-auto animate-pulse">
                     <div className="flex flex-col sm:flex-row gap-8">
-                        <div className="w-56 aspect-[2/3] rounded-lg bg-white/10 shrink-0 self-center sm:self-start" />
+                        <div className="w-56 aspect-[2/3] rounded-lg bg-gray-800 shrink-0 self-center sm:self-start" />
 
                         <div className="flex-1 w-full">
-                            <div className="h-8 w-2/3 bg-white/10 rounded mb-4" />
-                            <div className="h-5 w-24 bg-white/10 rounded mb-6" />
+                            <div className="h-8 w-2/3 bg-gray-800 rounded mb-4" />
+                            <div className="h-5 w-24 bg-gray-800 rounded mb-6" />
 
                             <div className="space-y-2 mb-8">
-                                <div className="h-3 w-full bg-white/10 rounded" />
-                                <div className="h-3 w-full bg-white/10 rounded" />
-                                <div className="h-3 w-2/3 bg-white/10 rounded" />
+                                <div className="h-3 w-full bg-gray-800 rounded" />
+                                <div className="h-3 w-full bg-gray-800 rounded" />
+                                <div className="h-3 w-2/3 bg-gray-800 rounded" />
                             </div>
 
-                            <div className="h-3 w-24 bg-white/10 rounded mb-3" />
+                            <div className="h-3 w-24 bg-gray-800 rounded mb-3" />
                             <div className="flex gap-2">
                                 {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="w-10 h-10 rounded-lg bg-white/10" />
+                                    <div key={i} className="w-10 h-10 rounded-lg bg-gray-800" />
                                 ))}
                             </div>
                         </div>
                     </div>
 
                     <div className="mt-12">
-                        <div className="h-3 w-20 bg-white/10 rounded mb-4" />
+                        <div className="h-3 w-20 bg-gray-800 rounded mb-4" />
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-5">
                             {[...Array(6)].map((_, i) => (
                                 <div key={i}>
-                                    <div className="w-full aspect-[2/3] rounded-lg bg-white/10 mb-2" />
-                                    <div className="h-3 w-3/4 bg-white/10 rounded mb-1" />
-                                    <div className="h-2 w-1/2 bg-white/10 rounded" />
+                                    <div className="w-full aspect-[2/3] rounded-lg bg-gray-800 mb-2" />
+                                    <div className="h-3 w-3/4 bg-gray-800 rounded mb-1" />
+                                    <div className="h-2 w-1/2 bg-gray-800 rounded" />
                                 </div>
                             ))}
                         </div>
