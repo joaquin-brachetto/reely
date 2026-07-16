@@ -60,21 +60,26 @@ export default function MovieDetailPage() {
                 const data = await getDetails(mediaType, id)
                 if (cancelled) return
                 setMovie(data)
+                setLoading(false)
 
-                try {
-                    const originalPoster = await getOriginalPoster(mediaType, id, data.original_language)
-                    if (!cancelled && originalPoster) setOriginalPosterPath(originalPoster)
-                } catch {}
+                // Póster original y ratings se hidratan en paralelo, sin bloquear el render
+                getOriginalPoster(mediaType, id, data.original_language)
+                    .then((originalPoster) => {
+                        if (!cancelled && originalPoster) setOriginalPosterPath(originalPoster)
+                    })
+                    .catch(() => {})
 
                 const imdbId = data.external_ids?.imdb_id || data.imdb_id
-                try {
-                    const externalRatings = await getExternalRatings(imdbId)
-                    if (!cancelled) setRatings(externalRatings)
-                } catch {}
+                getExternalRatings(imdbId)
+                    .then((externalRatings) => {
+                        if (!cancelled) setRatings(externalRatings)
+                    })
+                    .catch(() => {})
             } catch (err) {
-                if (!cancelled) setError(err.message)
-            } finally {
-                if (!cancelled) setLoading(false)
+                if (!cancelled) {
+                    setError(err.message)
+                    setLoading(false)
+                }
             }
         }
 
