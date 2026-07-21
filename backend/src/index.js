@@ -12,6 +12,9 @@ dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Necesario para que express-rate-limit funcione detrás del proxy de Render
+app.set('trust proxy', 1)
+
 app.use(cors({ 
     origin: function (origin, callback) {
         const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173'
