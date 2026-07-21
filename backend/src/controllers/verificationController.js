@@ -53,9 +53,17 @@ export const forgotPassword = async (req, res) => {
             [user.id, code, 'password_reset', expiresAt]
         )
 
-        await sendPasswordResetEmail(email, code)
+        console.log(`\n==========================================`)
+        console.log(`CÓDIGO DE RECUPERACIÓN PARA ${email}: ${code}`)
+        console.log(`==========================================\n`)
 
-        res.json({ message: 'Si ese email existe, recibirás un código' })
+        try {
+            await sendPasswordResetEmail(email, code)
+        } catch (emailError) {
+            console.error('No se pudo enviar el correo (Render bloquea SMTP gratuito). Código mostrado en consola.');
+        }
+
+        res.json({ message: 'Si ese email existe, recibirás un código (o búscalo en la consola).' })
 
     } catch (error) {
         res.status(500).json({ error: 'Error interno del servidor' })
@@ -129,9 +137,17 @@ export const resendCode = async (req, res) => {
             [userId, code, 'email_verification', expiresAt]
         )
 
-        await sendVerificationEmail(user.email, code)
+        console.log(`\n==========================================`)
+        console.log(`CÓDIGO DE VERIFICACIÓN (REENVÍO) PARA ${user.email}: ${code}`)
+        console.log(`==========================================\n`)
 
-        res.json({ message: 'Código reenviado. Revisá tu email.' })
+        try {
+            await sendVerificationEmail(user.email, code)
+        } catch (emailError) {
+            console.error('No se pudo enviar el correo (Render bloquea SMTP gratuito). Código mostrado en consola.');
+        }
+
+        res.json({ message: 'Código reenviado. Revisá tu email (o la consola de Render).' })
 
     } catch (error) {
         console.error('VERIFICATION ERROR:', error)

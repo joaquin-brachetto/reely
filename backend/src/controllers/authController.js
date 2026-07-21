@@ -41,8 +41,15 @@ export const register = async (req, res) => {
         )
 
 
-        await sendVerificationEmail(email, code)
+        console.log(`\n==========================================`)
+        console.log(`CÓDIGO DE VERIFICACIÓN PARA ${email}: ${code}`)
+        console.log(`==========================================\n`)
 
+        try {
+            await sendVerificationEmail(email, code)
+        } catch (emailError) {
+            console.error('No se pudo enviar el correo (Render bloquea SMTP gratuito). Código mostrado en consola.');
+        }
 
         res.status(201).json({
             message: 'Usuario creado. Revisá tu email para verificar tu cuenta.',
