@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { getPersonDetails } from '../services/movieService'
@@ -10,30 +11,15 @@ export default function PersonDetailPage() {
     const { id } = useParams()
     const navigate = useNavigate()
 
-    const [person, setPerson] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const { data: person, isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['person', id],
+        queryFn: () => getPersonDetails(id),
+    })
+
+    const error = queryError?.message
 
     useEffect(() => {
-        let cancelled = false
-
-        const fetchPerson = async () => {
-            setLoading(true)
-            setError(null)
-            setPerson(null)
-            try {
-                const data = await getPersonDetails(id)
-                if (!cancelled) setPerson(data)
-            } catch (err) {
-                if (!cancelled) setError(err.message)
-            } finally {
-                if (!cancelled) setLoading(false)
-            }
-        }
-
-        fetchPerson()
         window.scrollTo(0, 0)
-        return () => { cancelled = true }
     }, [id])
 
     if (loading) {

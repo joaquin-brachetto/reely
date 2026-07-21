@@ -1,22 +1,11 @@
-const BASE_URL = `${import.meta.env.VITE_API_URL}/preferences`
+import { apiClient } from '../lib/axios'
 
-export const getPreferencesRequest = async (token) => {
-    const res = await fetch(BASE_URL, {
-        credentials: 'include'
-    })
-    if (!res.ok) throw new Error('Error al obtener las preferencias')
-    return res.json()
+const BASE_URL = '/preferences'
+
+export const getPreferencesRequest = async () => {
+    return apiClient.get(BASE_URL)
 }
 
-export const updatePreferencesRequest = async (token, { region, language, providerIds }) => {
-    const res = await fetch(BASE_URL, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ region, language, providerIds })
-    })
-    if (!res.ok) throw new Error('Error al guardar las preferencias')
-    return res.json()
+export const updatePreferencesRequest = async ({ region, language, providerIds }) => {
+    return apiClient.put(BASE_URL, { region, language, providerIds })
 }

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './AuthContext'
 import { getWatchlistRequest, addToWatchlistRequest, removeFromWatchlistRequest } from '../services/watchlistService'
 
@@ -6,52 +7,64 @@ const WatchlistContext = createContext(null)
 
 export function WatchlistProvider({ children }) {
     const { token } = useAuth()
-    const [watchlist, setWatchlist] = useState([])
-    const [loading, setLoading] = useState(false)
+    const queryClient = useQueryClient()
 
-    useEffect(() => {
-        if (!token) {
-            setWatchlist([])
-            return
-        }
-
-        setLoading(true)
-        getWatchlistRequest(token)
-            .then(setWatchlist)
-            .catch(() => {})
-            .finally(() => setLoading(false))
-    }, [token])
+    const { data: watchlist = [], isLoading } = useQuery({
+        queryKey: ['watchlist'],
+        queryFn: () => getWatchlistRequest(),
+        enabled: !!token,
+        staleTime: 1000 * 60 * 5
+    })
 
     const isSaved = useCallback((mediaType, tmdbId) => {
         return watchlist.some(item => item.media_type === mediaType && item.tmdb_id === tmdbId)
     }, [watchlist])
 
-    const toggle = useCallback(async (item) => {
-        if (!token) return
-
-        const { mediaType, tmdbId, title, posterPath, releaseDate } = item
-        const alreadySaved = isSaved(mediaType, tmdbId)
-
-        if (alreadySaved) {
-            setWatchlist(prev => prev.filter(w => !(w.media_type === mediaType && w.tmdb_id === tmdbId)))
-            try {
-                await removeFromWatchlistRequest(token, mediaType, tmdbId)
-            } catch {
-                setWatchlist(prev => [...prev, { media_type: mediaType, tmdb_id: tmdbId, title, poster_path: posterPath, release_date: releaseDate }])
+    const toggleMutation = useMutation({
+        mutationFn: async (item) => {
+            const { mediaType, tmdbId, title, posterPath, releaseDate } = item
+            if (isSaved(mediaType, tmdbId)) {
+                return removeFromWatchlistRequest(mediaType, tmdbId)
+            } else {
+                return addToWatchlistRequest({ mediaType, tmdbId, title, posterPath, releaseDate })
             }
-            return
-        }
+        },
+        onMutate: async (item) => {
+            await queryClient.cancelQueries({ queryKey: ['watchlist'] })
+            const previous = queryClient.getQueryData(['watchlist']) || []
+            const alreadySaved = previous.some(w => w.media_type === item.mediaType && w.tmdb_id === item.tmdbId)
 
-        setWatchlist(prev => [...prev, { media_type: mediaType, tmdb_id: tmdbId, title, poster_path: posterPath, release_date: releaseDate }])
-        try {
-            await addToWatchlistRequest(token, { mediaType, tmdbId, title, posterPath, releaseDate })
-        } catch {
-            setWatchlist(prev => prev.filter(w => !(w.media_type === mediaType && w.tmdb_id === tmdbId)))
+            let next
+            if (alreadySaved) {
+                next = previous.filter(w => !(w.media_type === item.mediaType && w.tmdb_id === item.tmdbId))
+            } else {
+                next = [...previous, { 
+                    media_type: item.mediaType, 
+                    tmdb_id: item.tmdbId, 
+                    title: item.title, 
+                    poster_path: item.posterPath, 
+                    release_date: item.releaseDate 
+                }]
+            }
+
+            queryClient.setQueryData(['watchlist'], next)
+            return { previous }
+        },
+        onError: (err, newTodo, context) => {
+            queryClient.setQueryData(['watchlist'], context.previous)
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['watchlist'] })
         }
-    }, [token, isSaved])
+    })
+
+    const toggle = useCallback((item) => {
+        if (!token) return
+        toggleMutation.mutate(item)
+    }, [token, toggleMutation])
 
     return (
-        <WatchlistContext.Provider value={{ watchlist, loading, isSaved, toggle }}>
+        <WatchlistContext.Provider value={{ watchlist, loading: isLoading, isSaved, toggle }}>
             {children}
         </WatchlistContext.Provider>
     )

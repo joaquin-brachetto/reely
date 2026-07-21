@@ -1,31 +1,15 @@
-const BASE_URL = `${import.meta.env.VITE_API_URL}/watchlist`
+import { apiClient } from '../lib/axios'
 
-export const getWatchlistRequest = async (token) => {
-    const res = await fetch(BASE_URL, {
-        credentials: 'include'
-    })
-    if (!res.ok) throw new Error('Error al obtener la watchlist')
-    return res.json()
+const BASE_URL = '/watchlist'
+
+export const getWatchlistRequest = async () => {
+    return apiClient.get(BASE_URL)
 }
 
-export const addToWatchlistRequest = async (token, { mediaType, tmdbId, title, posterPath, releaseDate }) => {
-    const res = await fetch(BASE_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ mediaType, tmdbId, title, posterPath, releaseDate })
-    })
-    if (!res.ok) throw new Error('Error al guardar en la watchlist')
-    return res.json()
+export const addToWatchlistRequest = async ({ mediaType, tmdbId, title, posterPath, releaseDate }) => {
+    return apiClient.post(BASE_URL, { mediaType, tmdbId, title, posterPath, releaseDate })
 }
 
-export const removeFromWatchlistRequest = async (token, mediaType, tmdbId) => {
-    const res = await fetch(`${BASE_URL}/${mediaType}/${tmdbId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-    })
-    if (!res.ok) throw new Error('Error al quitar de la watchlist')
-    return res.json()
+export const removeFromWatchlistRequest = async (mediaType, tmdbId) => {
+    return apiClient.delete(`${BASE_URL}/${mediaType}/${tmdbId}`)
 }

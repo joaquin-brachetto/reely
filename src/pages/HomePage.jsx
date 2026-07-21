@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTitles } from '../hooks/useTitles'
 import { useDebounce } from '../hooks/useDebounce'
@@ -30,25 +31,60 @@ export default function HomePage() {
     const [mediaType, setMediaType] = useState('all')
     const [year, setYear] = useState('')
     const [genreKey, setGenreKey] = useState('')
-    const [movieGenres, setMovieGenres] = useState([])
-    const [tvGenres, setTvGenres] = useState([])
-    const [trending, setTrending] = useState([])
-    const [trendingLoading, setTrendingLoading] = useState(false)
-    const [trendingError, setTrendingError] = useState(null)
-    const [sections, setSections] = useState([])
-    const [sectionsLoading, setSectionsLoading] = useState(true)
 
     const isTrendingTab = mediaType === 'trending'
     const debouncedSearchTerm = useDebounce(searchTerm, 500)
-    const { titles, loading, error, fetchTitles } = useTitles()
-
     const showSections = mediaType === 'all' && !debouncedSearchTerm && !year && !genreKey
 
-    useEffect(() => {
-        let cancelled = false
+    const { data: genresData } = useQuery({
+        queryKey: ['genres'],
+        queryFn: () => Promise.all([getGenres('movie'), getGenres('tv')]),
+        staleTime: Infinity
+    })
+    const movieGenres = genresData?.[0] || []
+    const tvGenres = genresData?.[1] || []
 
-        const fetchSections = async () => {
-            setSectionsLoading(true)
+    const genreOptions = useMemo(() => {
+        if (mediaType === 'movie') {
+            return movieGenres.map(g => ({ key: String(g.id), name: g.name, movie: g.id, tv: undefined }))
+        }
+        if (mediaType === 'tv') {
+            return tvGenres.map(g => ({ key: String(g.id), name: g.name, movie: undefined, tv: g.id }))
+        }
+
+        const merged = new Map()
+        movieGenres.forEach(g => merged.set(g.name, { key: g.name, name: g.name, movie: g.id, tv: undefined }))
+        tvGenres.forEach(g => {
+            const existing = merged.get(g.name)
+            if (existing) existing.tv = g.id
+            else merged.set(g.name, { key: g.name, name: g.name, movie: undefined, tv: g.id })
+        })
+        return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name))
+    }, [mediaType, movieGenres, tvGenres])
+
+    const selectedGenre = genreOptions.find(g => g.key === genreKey)
+    const genreIds = selectedGenre ? { movie: selectedGenre.movie, tv: selectedGenre.tv } : undefined
+
+    const { titles, loading: titlesLoading, error: titlesError } = useTitles(mediaType, { 
+        query: debouncedSearchTerm, 
+        year, 
+        genreIds 
+    }, {
+        enabled: !isTrendingTab && !showSections
+    })
+
+    const { data: trendingData, isLoading: trendingLoading, error: trendingQueryError } = useQuery({
+        queryKey: ['trending-all'],
+        queryFn: () => getTrendingAll().then(data => data.results),
+        enabled: isTrendingTab,
+        staleTime: 1000 * 60 * 60
+    })
+    const trending = trendingData || []
+    const trendingError = trendingQueryError?.message
+
+    const { data: sectionsData, isLoading: sectionsLoading } = useQuery({
+        queryKey: ['home-sections', country],
+        queryFn: async () => {
             const definitions = [
                 {
                     title: `Top 10 en ${country} hoy`,
@@ -107,70 +143,16 @@ export default function HomePage() {
                     }
                 })
             )
-
-            if (!cancelled) {
-                setSections(results.filter(s => s.items.length > 0))
-                setSectionsLoading(false)
-            }
-        }
-
-        fetchSections()
-        return () => { cancelled = true }
-    }, [country])
-
-    useEffect(() => {
-        Promise.all([getGenres('movie'), getGenres('tv')])
-            .then(([movie, tv]) => {
-                setMovieGenres(movie)
-                setTvGenres(tv)
-            })
-            .catch(() => {})
-    }, [])
-
-    useEffect(() => {
-        setGenreKey('')
-    }, [mediaType])
-
-    useEffect(() => {
-        if (!isTrendingTab || trending.length > 0) return
-
-        setTrendingLoading(true)
-        setTrendingError(null)
-        getTrendingAll()
-            .then(data => setTrending(data.results))
-            .catch(err => setTrendingError(err.message))
-            .finally(() => setTrendingLoading(false))
-    }, [isTrendingTab, trending.length])
-
-    const genreOptions = useMemo(() => {
-        if (mediaType === 'movie') {
-            return movieGenres.map(g => ({ key: String(g.id), name: g.name, movie: g.id, tv: undefined }))
-        }
-        if (mediaType === 'tv') {
-            return tvGenres.map(g => ({ key: String(g.id), name: g.name, movie: undefined, tv: g.id }))
-        }
-
-        const merged = new Map()
-        movieGenres.forEach(g => merged.set(g.name, { key: g.name, name: g.name, movie: g.id, tv: undefined }))
-        tvGenres.forEach(g => {
-            const existing = merged.get(g.name)
-            if (existing) existing.tv = g.id
-            else merged.set(g.name, { key: g.name, name: g.name, movie: undefined, tv: g.id })
-        })
-        return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name))
-    }, [mediaType, movieGenres, tvGenres])
-
-    const selectedGenre = genreOptions.find(g => g.key === genreKey)
-    const genreIds = selectedGenre ? { movie: selectedGenre.movie, tv: selectedGenre.tv } : undefined
-
-    useEffect(() => {
-        if (isTrendingTab || showSections) return
-        fetchTitles(mediaType, { query: debouncedSearchTerm, year, genreIds })
-    }, [mediaType, debouncedSearchTerm, year, genreKey, movieGenres, tvGenres, isTrendingTab, showSections])
+            return results.filter(s => s.items.length > 0)
+        },
+        enabled: showSections,
+        staleTime: 1000 * 60 * 60
+    })
+    const sections = sectionsData || []
 
     const displayedTitles = isTrendingTab ? trending : titles
-    const isLoading = isTrendingTab ? trendingLoading : loading
-    const displayedError = isTrendingTab ? trendingError : error
+    const isLoading = isTrendingTab ? trendingLoading : titlesLoading
+    const displayedError = isTrendingTab ? trendingError : titlesError
 
     return (
         <div className="min-h-screen bg-black p-8">
@@ -199,7 +181,10 @@ export default function HomePage() {
                     {TABS.map(tab => (
                         <button
                             key={tab.key}
-                            onClick={() => setMediaType(prev => prev === tab.key ? 'all' : tab.key)}
+                            onClick={() => {
+                                setMediaType(prev => prev === tab.key ? 'all' : tab.key)
+                                setGenreKey('')
+                            }}
                             className={`px-4 py-2 rounded-full text-sm font-bold transition ${
                                 mediaType === tab.key
                                     ? 'bg-green-600 text-white'

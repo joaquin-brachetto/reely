@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Search, Star, Sparkles } from 'lucide-react'
 import { useAuthForm } from '../hooks/useAuthForm'
@@ -13,9 +14,6 @@ import fondo from '../assets/logo.jpg'
 
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original'
 const POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w342'
-
-// Cache en memoria: al volver a /login no se repite el fetch ni el fade
-let trendingCache = null
 
 const views = {
     login: (props) => <LoginForm {...props} />,
@@ -45,40 +43,29 @@ export default function LoginPage() {
 
     const navigate = useNavigate()
     const [showForms, setShowForms] = useState(false)
-    const [backdrop, setBackdrop] = useState(trendingCache?.backdrop ?? null)
-    const [backdropMovie, setBackdropMovie] = useState(trendingCache?.backdropMovie ?? null)
-    const [trending, setTrending] = useState(trendingCache?.trending ?? [])
-    const [isLoading, setIsLoading] = useState(!trendingCache)
-
-    useEffect(() => {
-        if (trendingCache) return
-
-        const fetchTrending = async () => {
-            try {
-                const data = await getTrendingMovies()
-                const results = data.results || []
-                const withBackdrop = results.find((movie) => movie.backdrop_path)
-                const nextBackdrop = withBackdrop
-                    ? `${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`
-                    : fondo
-                const nextTrending = results.filter((movie) => movie.poster_path).slice(0, 6)
-                trendingCache = {
-                    backdrop: nextBackdrop,
-                    backdropMovie: withBackdrop || null,
-                    trending: nextTrending,
-                }
-                setBackdrop(nextBackdrop)
-                setBackdropMovie(withBackdrop || null)
-                setTrending(nextTrending)
-            } catch {
-                setBackdrop(fondo)
-                setTrending([])
-            } finally {
-                setIsLoading(false)
+    const { data, isLoading } = useQuery({
+        queryKey: ['login-trending'],
+        queryFn: async () => {
+            const res = await getTrendingMovies()
+            const results = res.results || []
+            const withBackdrop = results.find((movie) => movie.backdrop_path)
+            const backdrop = withBackdrop
+                ? `${BACKDROP_BASE_URL}${withBackdrop.backdrop_path}`
+                : fondo
+            const trending = results.filter((movie) => movie.poster_path).slice(0, 6)
+            
+            return {
+                backdrop,
+                backdropMovie: withBackdrop || null,
+                trending,
             }
-        }
-        fetchTrending()
-    }, [])
+        },
+        staleTime: 1000 * 60 * 60,
+    })
+
+    const backdrop = data?.backdrop || fondo
+    const backdropMovie = data?.backdropMovie || null
+    const trending = data?.trending || []
 
     const commonProps = {
         formData,

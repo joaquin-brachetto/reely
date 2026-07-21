@@ -1,20 +1,15 @@
-import { useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { searchTitles, discoverTitles } from '../services/movieService'
 
-export function useTitles() {
-    const [titles, setTitles] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
+export function useTitles(mediaType, { query, year, genreIds } = {}) {
+    const queryKey = ['titles', mediaType, query, year, genreIds]
 
-    const fetchTitles = useCallback(async (mediaType, { query, year, genreIds } = {}) => {
-        setLoading(true)
-        setError(null)
-        try {
-            let results
-
+    const queryResult = useQuery({
+        queryKey,
+        queryFn: async () => {
             if (query) {
                 const data = await searchTitles(query, mediaType, { year })
-                results = data.results
+                let results = data.results
                 const hasGenreFilter = genreIds && Object.values(genreIds).some(Boolean)
                 if (hasGenreFilter) {
                     results = results.filter((item) => {
@@ -22,18 +17,17 @@ export function useTitles() {
                         return genreId ? item.genre_ids?.includes(genreId) : false
                     })
                 }
+                return results
             } else {
                 const data = await discoverTitles(mediaType, { year, genreIds })
-                results = data.results
+                return data.results
             }
+        },
+    })
 
-            setTitles(results)
-        } catch (err) {
-            setError(err.message)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    return { titles, loading, error, fetchTitles }
+    return { 
+        titles: queryResult.data || [], 
+        loading: queryResult.isLoading, 
+        error: queryResult.error?.message || null 
+    }
 }

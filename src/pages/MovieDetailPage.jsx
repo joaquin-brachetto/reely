@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Bookmark, ArrowLeft } from 'lucide-react'
 import { getDetails, getOriginalPoster, getExternalRatings, getCertification } from '../services/movieService'
@@ -34,59 +35,33 @@ export default function MovieDetailPage() {
     const { country } = usePreferences()
     const { isSaved, toggle } = useWatchlist()
 
-    const [movie, setMovie] = useState(null)
-    const [originalPosterPath, setOriginalPosterPath] = useState(null)
-    const [ratings, setRatings] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-
     const isValidMediaType = VALID_MEDIA_TYPES.includes(mediaType)
 
+    const { data: movie, isLoading: isMovieLoading, error: movieError } = useQuery({
+        queryKey: ['movie', mediaType, id],
+        queryFn: () => getDetails(mediaType, id),
+        enabled: isValidMediaType,
+    })
+
+    const { data: originalPosterPath } = useQuery({
+        queryKey: ['movie-poster', mediaType, id, movie?.original_language],
+        queryFn: () => getOriginalPoster(mediaType, id, movie.original_language),
+        enabled: !!movie && !!movie.original_language,
+    })
+
+    const imdbId = movie?.external_ids?.imdb_id || movie?.imdb_id
+    const { data: ratings } = useQuery({
+        queryKey: ['movie-ratings', imdbId],
+        queryFn: () => getExternalRatings(imdbId),
+        enabled: !!imdbId,
+    })
+
+    const loading = isMovieLoading
+    const error = movieError?.message || (!isValidMediaType ? 'Tipo de medio no válido' : null)
+
     useEffect(() => {
-        if (!isValidMediaType) {
-            setLoading(false)
-            return
-        }
-
-        let cancelled = false
-
-        const fetchDetails = async () => {
-            setLoading(true)
-            setError(null)
-            setMovie(null)
-            setOriginalPosterPath(null)
-            setRatings(null)
-            try {
-                const data = await getDetails(mediaType, id)
-                if (cancelled) return
-                setMovie(data)
-                setLoading(false)
-
-                // Póster original y ratings se hidratan en paralelo, sin bloquear el render
-                getOriginalPoster(mediaType, id, data.original_language)
-                    .then((originalPoster) => {
-                        if (!cancelled && originalPoster) setOriginalPosterPath(originalPoster)
-                    })
-                    .catch(() => {})
-
-                const imdbId = data.external_ids?.imdb_id || data.imdb_id
-                getExternalRatings(imdbId)
-                    .then((externalRatings) => {
-                        if (!cancelled) setRatings(externalRatings)
-                    })
-                    .catch(() => {})
-            } catch (err) {
-                if (!cancelled) {
-                    setError(err.message)
-                    setLoading(false)
-                }
-            }
-        }
-
-        fetchDetails()
         window.scrollTo(0, 0)
-        return () => { cancelled = true }
-    }, [mediaType, id, isValidMediaType])
+    }, [id, mediaType])
 
     if (loading) {
         return (

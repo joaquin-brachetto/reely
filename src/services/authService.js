@@ -1,66 +1,31 @@
-const BASE_URL = `${import.meta.env.VITE_API_URL}/auth`
+import { apiClient } from '../lib/axios'
+
+const BASE_URL = '/auth'
 
 export const registerRequest = async (username, email, password) => {
-    const res = await fetch(`${BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, email, password })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/register`, { username, email, password })
 }
 
 export const loginRequest = async (identifier, password) => {
-    const res = await fetch(`${BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ identifier, password })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/login`, { identifier, password })
 }
 
 export const verifyEmailRequest = async (userId, code) => {
-    const res = await fetch(`${BASE_URL}/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, code })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/verify-email`, { userId, code })
 }
 
 export const forgotPasswordRequest = async (email) => {
-    const res = await fetch(`${BASE_URL}/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/forgot-password`, { email })
 }
 
 export const resetPasswordRequest = async (email, code, newPassword) => {
-    const res = await fetch(`${BASE_URL}/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, newPassword })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/reset-password`, { email, code, newPassword })
 }
 
 export const resendCodeRequest = async (userId) => {
-    const res = await fetch(`${BASE_URL}/resend-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userId })
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/resend-code`, { userId })
 }
 
 export const logoutRequest = async () => {
-    const res = await fetch(`${BASE_URL}/logout`, {
-        method: 'POST',
-        credentials: 'include'
-    })
-    return res
+    return apiClient.post(`${BASE_URL}/logout`)
 }
