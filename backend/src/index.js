@@ -35,9 +35,13 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' })
 })
 
+import { runMigrations } from './db/index.js'
+
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`Servidor corriendo en http://localhost:${PORT}`)
+    runMigrations().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Servidor corriendo en http://localhost:${PORT}`)
+        })
     })
 }
 
