@@ -134,6 +134,7 @@ export const resendCode = async (req, res) => {
         res.json({ message: 'Código reenviado. Revisá tu email.' })
 
     } catch (error) {
-        res.status(500).json({ error: 'Error interno del servidor' })
+        console.error('VERIFICATION ERROR:', error)
+        res.status(500).json({ error: 'Error interno del servidor', details: error.message || error.toString() })
     }
 }
