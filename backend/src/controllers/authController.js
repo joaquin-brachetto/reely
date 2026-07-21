@@ -32,7 +32,8 @@ export const register = async (req, res) => {
 
 
         const code = generateCode()
-        const expiresAt = new Date(Date.now() + process.env.CODE_EXPIRES_MINUTES * 60 * 1000).toISOString()
+        const expireMins = parseInt(process.env.CODE_EXPIRES_MINUTES || '15')
+        const expiresAt = new Date(Date.now() + expireMins * 60 * 1000).toISOString()
 
         await pool.query(
             'INSERT INTO verification_codes (user_id, code, type, expires_at) VALUES ($1, $2, $3, $4)',

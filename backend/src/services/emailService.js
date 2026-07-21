@@ -20,7 +20,7 @@ export const sendVerificationEmail = async (email, code) => {
       <h2>Bienvenido a ${process.env.APP_NAME}</h2>
       <p>Tu código de verificación es:</p>
       <h1 style="letter-spacing: 8px">${code}</h1>
-      <p>Este código expira en ${process.env.CODE_EXPIRES_MINUTES} minutos.</p>
+      <p>Este código expira en ${process.env.CODE_EXPIRES_MINUTES || '15'} minutos.</p>
     `
     })
 }
@@ -34,7 +34,7 @@ export const sendPasswordResetEmail = async (email, code) => {
       <h2>Recuperar contraseña</h2>
       <p>Tu código de recuperación es:</p>
       <h1 style="letter-spacing: 8px">${code}</h1>
-      <p>Este código expira en ${process.env.CODE_EXPIRES_MINUTES} minutos.</p>
+      <p>Este código expira en ${process.env.CODE_EXPIRES_MINUTES || '15'} minutos.</p>
     `
     })
 }

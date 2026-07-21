@@ -39,7 +39,8 @@ export const forgotPassword = async (req, res) => {
 
         const user = result.rows[0]
         const code = generateCode()
-        const expiresAt = new Date(Date.now() + process.env.CODE_EXPIRES_MINUTES * 60 * 1000).toISOString()
+        const expireMins = parseInt(process.env.CODE_EXPIRES_MINUTES || '15')
+        const expiresAt = new Date(Date.now() + expireMins * 60 * 1000).toISOString()
 
 
         await pool.query(
@@ -115,7 +116,8 @@ export const resendCode = async (req, res) => {
 
         const user = userResult.rows[0]
         const code = generateCode()
-        const expiresAt = new Date(Date.now() + process.env.CODE_EXPIRES_MINUTES * 60 * 1000).toISOString()
+        const expireMins = parseInt(process.env.CODE_EXPIRES_MINUTES || '15')
+        const expiresAt = new Date(Date.now() + expireMins * 60 * 1000).toISOString()
 
         await pool.query(
             'DELETE FROM verification_codes WHERE user_id = $1 AND type = $2',
