@@ -86,11 +86,36 @@ export const login = async (req, res) => {
         if (!isValid)
             return res.status(401).json({ error: 'Credenciales inválidas' })
 
-        if (!user.is_verified)
+        if (!user.is_verified) {
+            const code = generateCode()
+            const expireMins = parseInt(process.env.CODE_EXPIRES_MINUTES || '15')
+            const expiresAt = new Date(Date.now() + expireMins * 60 * 1000).toISOString()
+
+            await pool.query(
+                'DELETE FROM verification_codes WHERE user_id = $1 AND type = $2',
+                [user.id, 'email_verification']
+            )
+
+            await pool.query(
+                'INSERT INTO verification_codes (user_id, code, type, expires_at) VALUES ($1, $2, $3, $4)',
+                [user.id, code, 'email_verification', expiresAt]
+            )
+
+            console.log(`\n==========================================`)
+            console.log(`CÓDIGO DE VERIFICACIÓN (LOGIN) PARA ${user.email}: ${code}`)
+            console.log(`==========================================\n`)
+
+            try {
+                await sendVerificationEmail(user.email, code)
+            } catch (emailError) {
+                console.error('No se pudo enviar el correo en login (Render SMTP). Código en consola.');
+            }
+
             return res.status(403).json({
-                error: 'Cuenta no verificada. Revisá tu email.',
+                error: 'Cuenta no verificada. Te enviamos un nuevo código a tu email (o revisá los logs de Render).',
                 userId: user.id
             })
+        }
 
         const token = jwt.sign(
             { userId: user.id, username: user.username },
