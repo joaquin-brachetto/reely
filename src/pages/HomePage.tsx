@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTitles } from '../hooks/useTitles'
 import { useDebounce } from '../hooks/useDebounce'
 import { usePreferences } from '../context/PreferencesContext'
-import { getGenres, getTrendingAll, discoverSection } from '../services/movieService'
+import { getGenres, getTrendingAll, discoverSection, getWatchProviders } from '../services/movieService'
 import MovieCard from '../components/movies/MovieCard'
 import MovieRow from '../components/movies/MovieRow'
 import Pagination from '../components/ui/Pagination'
@@ -27,7 +27,7 @@ const YEAR_OPTIONS = Array.from(
 
 export default function HomePage() {
     const navigate = useNavigate()
-    const { country } = usePreferences()
+    const { preferences, country } = usePreferences()
     const [searchTerm, setSearchTerm] = useState('')
     const [mediaType, setMediaType] = useState('all')
     const [year, setYear] = useState('')
@@ -90,15 +90,39 @@ export default function HomePage() {
     const trending = trendingData || []
     const trendingError = trendingQueryError?.message
 
+    const { data: watchProvidersList = [] } = useQuery({
+        queryKey: ['watch-providers-list', country],
+        queryFn: () => getWatchProviders('movie', country),
+        staleTime: 1000 * 60 * 60
+    })
+
+    const selectedProviderIds = preferences.providerIds || []
+    const providerIdsKey = selectedProviderIds.join(',')
+
     const { data: sectionsData, isLoading: sectionsLoading } = useQuery({
-        queryKey: ['home-sections', country],
+        queryKey: ['home-sections', country, providerIdsKey, watchProvidersList.length],
         queryFn: async () => {
+            const providerSections = selectedProviderIds.map(providerId => {
+                const found = watchProvidersList.find((p: any) => p.provider_id === providerId)
+                const providerName = found?.provider_name || 'tu plataforma'
+                return {
+                    title: `Lo mejor de ${providerName}`,
+                    ranked: false,
+                    fetcher: () => discoverSection('movie', {
+                        withWatchProviders: String(providerId),
+                        region: country,
+                        sortBy: 'popularity.desc'
+                    }),
+                }
+            })
+
             const definitions = [
                 {
                     title: `Top 10 en ${country} hoy`,
                     ranked: true,
                     fetcher: () => getTrendingAll().then(data => data.results.slice(0, 10)),
                 },
+                ...providerSections,
                 {
                     title: 'Aclamadas por la crítica',
                     fetcher: () => discoverSection('movie', { sortBy: 'vote_average.desc', minVotes: 2000 }),

@@ -20,7 +20,7 @@ export default function WatchlistPage() {
                 ) : watchlist.length === 0 ? (
                     <p className="text-gray-400 text-center">Todavía no guardaste ninguna película o serie.</p>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 gap-3 sm:gap-4">
                         {watchlist.map(item => (
                             <MovieCard
                                 key={`${item.media_type}-${item.tmdb_id}`}

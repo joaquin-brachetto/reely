@@ -43,8 +43,8 @@ const discoverByType = async (mediaType: 'movie' | 'tv', { year, genreId, page =
 
 export const discoverSection = async (
     mediaType: 'movie' | 'tv', 
-    { sortBy = 'popularity.desc', genreId, minVotes, region, yearFrom, yearTo }: 
-    { sortBy?: string; genreId?: number; minVotes?: number; region?: string; yearFrom?: number; yearTo?: number } = {}
+    { sortBy = 'popularity.desc', genreId, minVotes, region, yearFrom, yearTo, withWatchProviders }: 
+    { sortBy?: string; genreId?: number; minVotes?: number; region?: string; yearFrom?: number; yearTo?: number; withWatchProviders?: string } = {}
 ) => {
     const params = new URLSearchParams({ page: '1', sort_by: sortBy })
     if (genreId) params.set('with_genres', String(genreId))
@@ -55,6 +55,9 @@ export const discoverSection = async (
     if (region) {
         params.set('watch_region', region)
         params.set('with_watch_monetization_types', 'flatrate|rent|buy|free|ads')
+    }
+    if (withWatchProviders) {
+        params.set('with_watch_providers', withWatchProviders)
     }
 
     const data = await apiClient.get<any, any>(`${BASE_URL}/discover/${mediaType}?${params.toString()}`)
