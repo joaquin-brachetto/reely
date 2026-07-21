@@ -61,28 +61,32 @@ export const discoverSection = async (
     return tagMediaType(data.results, mediaType)
 }
 
-export const discoverTitles = async (mediaType: 'all' | 'movie' | 'tv', { year, genreIds }: { year?: string; genreIds?: any } = {}) => {
+export const discoverTitles = async (mediaType: 'all' | 'movie' | 'tv', { year, genreIds, page = 1 }: { year?: string; genreIds?: any; page?: number } = {}) => {
     if (mediaType === 'all') {
         const [movies, shows] = await Promise.all([
-            discoverByType('movie', { year, genreId: genreIds?.movie }),
-            discoverByType('tv', { year, genreId: genreIds?.tv }),
+            discoverByType('movie', { year, genreId: genreIds?.movie, page }),
+            discoverByType('tv', { year, genreId: genreIds?.tv, page }),
         ])
         const results = [...movies.results, ...shows.results].sort((a: any, b: any) => b.popularity - a.popularity)
-        return { results }
+        return { 
+            results, 
+            total_pages: Math.max(movies.total_pages || 1, shows.total_pages || 1),
+            total_results: (movies.total_results || 0) + (shows.total_results || 0)
+        }
     }
 
-    return discoverByType(mediaType, { year, genreId: genreIds?.[mediaType] })
+    return discoverByType(mediaType, { year, genreId: genreIds?.[mediaType], page })
 }
 
-export const searchTitles = async (query: string, mediaType: 'all' | 'movie' | 'tv', { year }: { year?: string } = {}) => {
+export const searchTitles = async (query: string, mediaType: 'all' | 'movie' | 'tv', { year, page = 1 }: { year?: string; page?: number } = {}) => {
     if (mediaType === 'all') {
-        const params = new URLSearchParams({ language: 'es-ES', query, page: '1' })
+        const params = new URLSearchParams({ language: 'es-ES', query, page: String(page) })
         const data = await apiClient.get<any, any>(`${BASE_URL}/search/multi?${params.toString()}`)
         const filtered = data.results.filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
         return { ...data, results: await withOriginalPosters(filtered) }
     }
 
-    const params = new URLSearchParams({ language: 'es-ES', query, page: '1' })
+    const params = new URLSearchParams({ language: 'es-ES', query, page: String(page) })
     if (year) params.set(mediaType === 'movie' ? 'primary_release_year' : 'first_air_date_year', year)
 
     const data = await apiClient.get<any, any>(`${BASE_URL}/search/${mediaType}?${params.toString()}`)

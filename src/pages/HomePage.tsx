@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTitles } from '../hooks/useTitles'
@@ -7,6 +7,7 @@ import { usePreferences } from '../context/PreferencesContext'
 import { getGenres, getTrendingAll, discoverSection } from '../services/movieService'
 import MovieCard from '../components/movies/MovieCard'
 import MovieRow from '../components/movies/MovieRow'
+import Pagination from '../components/ui/Pagination'
 import InputField from '../components/ui/InputField'
 import SelectField from '../components/ui/SelectField'
 import UserMenu from '../components/user/UserMenu'
@@ -31,6 +32,7 @@ export default function HomePage() {
     const [mediaType, setMediaType] = useState('all')
     const [year, setYear] = useState('')
     const [genreKey, setGenreKey] = useState('')
+    const [page, setPage] = useState(1)
 
     const isTrendingTab = mediaType === 'trending'
     const debouncedSearchTerm = useDebounce(searchTerm, 500)
@@ -65,13 +67,19 @@ export default function HomePage() {
     const selectedGenre = genreOptions.find(g => g.key === genreKey)
     const genreIds = selectedGenre ? { movie: selectedGenre.movie, tv: selectedGenre.tv } : undefined
 
-    const { titles, loading: titlesLoading, error: titlesError } = useTitles(mediaType as 'all' | 'movie' | 'tv', { 
+    const { titles: displayedTitles, loading: titlesLoading, error: titlesError, totalPages } = useTitles(mediaType as 'all' | 'movie' | 'tv', { 
         query: debouncedSearchTerm, 
         year, 
-        genreIds 
+        genreIds,
+        page
     }, {
         enabled: !isTrendingTab && !showSections
     })
+
+    // Reset page on filter change
+    useEffect(() => {
+        setPage(1)
+    }, [debouncedSearchTerm, mediaType, year, genreKey])
 
     const { data: trendingData, isLoading: trendingLoading, error: trendingQueryError } = useQuery({
         queryKey: ['trending-all'],
@@ -150,8 +158,8 @@ export default function HomePage() {
     })
     const sections = sectionsData || []
 
-    const displayedTitles = isTrendingTab ? trending : titles
-    const isLoading = isTrendingTab ? trendingLoading : titlesLoading
+    const finalDisplayedTitles = isTrendingTab ? trending : displayedTitles
+    const isLoading = isTrendingTab ? trendingLoading : (showSections ? sectionsLoading : titlesLoading)
     const displayedError = isTrendingTab ? trendingError : titlesError
 
     return (
@@ -238,18 +246,30 @@ export default function HomePage() {
                     <div className="flex justify-center py-12">
                         <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                ) : displayedTitles.length === 0 ? (
+                ) : finalDisplayedTitles.length === 0 ? (
                     <p className="text-gray-400 text-center">No encontramos resultados con estos filtros.</p>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {displayedTitles.map((item: any) => (
-                            <MovieCard
-                                key={`${item.media_type}-${item.id}`}
-                                movie={item}
-                                onClick={() => navigate(`/${item.media_type}/${item.id}`)}
+                    <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                            {finalDisplayedTitles.map((item: any) => (
+                                <MovieCard
+                                    key={`${item.media_type}-${item.id}`}
+                                    movie={item}
+                                    onClick={() => navigate(`/${item.media_type}/${item.id}`)}
+                                />
+                            ))}
+                        </div>
+                        {!isTrendingTab && finalDisplayedTitles.length > 0 && (
+                            <Pagination 
+                                currentPage={page} 
+                                totalPages={totalPages} 
+                                onPageChange={(p) => {
+                                    setPage(p)
+                                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                                }} 
                             />
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
